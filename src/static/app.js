@@ -20,14 +20,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
-        activityCard.innerHTML = `
+        const participantItems = details.participants.length
+        ? details.participants.map((email) => `<li>${email}</li>`).join("")
+        : `<li>No participants yet</li>`;
+
+      activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <p><strong>Participants (${details.participants.length}):</strong></p>
+          <ul class="participant-list">${participantItems}</ul>
         `;
 
-        activitiesList.appendChild(activityCard);
+      activitiesList.appendChild(activityCard);
 
         // Add option to select dropdown
         const option = document.createElement("option");
