@@ -77,6 +77,10 @@ activities = {
     }
 }
 
+# Ensure every activity tracks removed participants for audit/history
+for activity in activities.values():
+    activity.setdefault("removed_participants", [])
+
 
 @app.get("/")
 def root():
@@ -95,6 +99,15 @@ def signup_for_activity(activity_name: str, email: str):
     if activity_name not in activities:
         raise HTTPException(status_code=404, detail="Activity not found")
 
+    # Normalize and validate email
+    email = email.strip()
+    if "@" not in email:
+        raise HTTPException(status_code=400, detail="A valid email address is required")
+
+    local_part, domain = email.rsplit("@", 1)
+    if domain.lower() != "mergington.edu":
+        raise HTTPException(status_code=400, detail="Only @mergington.edu email addresses are allowed")
+
     # Get the specific activity
     activity = activities[activity_name]
 
@@ -105,3 +118,28 @@ def signup_for_activity(activity_name: str, email: str):
     # Add student
     activity["participants"].append(email)
     return {"message": f"Signed up {email} for {activity_name}"}
+
+
+@app.delete("/activities/{activity_name}/participants")
+def remove_participant(activity_name: str, email: str):
+    """Unregister a student from an activity"""
+    if activity_name not in activities:
+        raise HTTPException(status_code=404, detail="Activity not found")
+
+    activity = activities[activity_name]
+
+    if email not in activity["participants"]:
+        raise HTTPException(status_code=404, detail="Participant not found")
+
+    activity["participants"].remove(email)
+    activity["removed_participants"].append(email)
+    return {"message": f"Removed {email} from {activity_name}"}
+
+
+@app.get("/activities/{activity_name}/removed_participants")
+def get_removed_participants(activity_name: str):
+    """Return the list of removed participants for an activity"""
+    if activity_name not in activities:
+        raise HTTPException(status_code=404, detail="Activity not found")
+
+    return {"activity": activity_name, "removed_participants": activities[activity_name]["removed_participants"]}
